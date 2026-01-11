@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Puppeteer v7.2</title>
+    <title>Puppeteer v8</title>
 
     <meta name="theme-color" content="#0b1020">
     <link rel="manifest" href="./manifest.webmanifest">
@@ -16,11 +16,12 @@
             --bg: #0b1020; --panel: #151a2a; --input: #202636;
             --accent: #5c9ce6; --text: #e0e0e0; --sub: #8899a6;
             --border: #2a3545; --danger: #e57373; --success: #4caf50;
+            --warning: #ffa726;
             --safe-area-top: env(safe-area-inset-top);
             --safe-area-bottom: env(safe-area-inset-bottom);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
+
         body {
             margin: 0; font-family: -apple-system, sans-serif;
             background: var(--bg); color: var(--text);
@@ -46,7 +47,7 @@
 
         /* Container */
         #container { display: flex; flex: 1; overflow: hidden; position: relative; }
-        
+
         /* Sidebar (Drawer) */
         #sidebar {
             width: 300px; background: var(--panel); border-right: 1px solid var(--border);
@@ -63,23 +64,19 @@
         }
         #overlay.open { display: block; }
 
-        /* --- VISUAL LIST ITEMS --- */
+        /* Character List Items */
         .char-item {
-            padding: 12px 15px; border-bottom: 1px solid var(--border); 
+            padding: 12px 15px; border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
             cursor: pointer; transition: background 0.2s;
             position: relative;
         }
-        /* Default state (inactive) */
         .char-item { border-left: 4px solid transparent; opacity: 0.7; }
-        
-        /* Active (Included in Prompt) State */
         .char-item.is-active {
             background: rgba(92, 156, 230, 0.1);
             border-left-color: var(--accent);
             opacity: 1.0;
         }
-        /* Selected (Editing) State */
         .char-item.is-editing {
             background: rgba(255, 255, 255, 0.05);
         }
@@ -113,8 +110,41 @@
         .content-view { flex: 1; overflow-y: auto; padding: 15px; display: none; }
         .content-view.active { display: block; }
 
+        /* Section Card Layout */
+        .section-card {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 20px; position: relative;
+        }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+        }
+        .section-title {
+            font-size: 1.1rem; font-weight: bold; color: var(--accent);
+            border-left: 4px solid var(--accent); padding-left: 12px;
+        }
+        .section-actions {
+            display: flex; gap: 8px;
+        }
+        .section-actions button {
+            padding: 6px 12px; font-size: 0.75rem; border-radius: 6px;
+        }
+
+        /* Field Grid */
+        .fields-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px; margin-bottom: 15px;
+        }
+        .field-item {
+            display: flex; flex-direction: column;
+        }
+        .field-item-inline {
+            display: flex; gap: 8px; align-items: flex-end;
+        }
+        .field-item-inline .field-item { flex: 1; margin-bottom: 0; }
+        .field-item-inline button { flex-shrink: 0; height: 46px; padding: 0 12px; }
+
         /* Inputs */
-        h3 { 
+        h3 {
             border-left: 4px solid var(--accent); padding-left: 10px; margin: 25px 0 15px; color: #fff;
             background: linear-gradient(90deg, rgba(92,156,230,0.1), transparent); padding-top:5px; padding-bottom:5px;
         }
@@ -125,11 +155,43 @@
         }
         input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(92,156,230,0.2); }
         label { display: block; color: var(--sub); font-size: 0.8rem; margin-bottom: 4px; }
-        
-        .btn { background: var(--input); color: #fff; border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; text-align: center;}
+
+        .btn {
+            background: var(--input); color: #fff; border: 1px solid var(--border);
+            padding: 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; text-align: center;
+        }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background: var(--accent); border: none; font-weight: bold; }
         .btn-danger { background: rgba(229, 115, 115, 0.2); border: 1px solid var(--danger); color: var(--danger); }
+        .btn-success { background: rgba(76, 175, 80, 0.2); border: 1px solid var(--success); color: var(--success); }
+        .btn-dashed { border-style: dashed; background: transparent; }
+
+        /* Prompt Mode Selector */
+        .mode-selector {
+            display: flex; gap: 15px; padding: 15px; background: rgba(0,0,0,0.2);
+            border-radius: 8px; margin-bottom: 15px; flex-wrap: wrap;
+        }
+        .mode-option {
+            display: flex; align-items: center; gap: 6px; cursor: pointer;
+        }
+        .mode-option input[type="radio"] {
+            width: auto; margin: 0; cursor: pointer;
+        }
+        .mode-option label {
+            margin: 0; cursor: pointer; color: var(--text); font-size: 0.85rem;
+        }
+
+        /* Relationship Matrix */
+        #relationship-matrix {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px; margin-bottom: 20px;
+        }
+        .relationship-pair {
+            background: var(--input); padding: 15px; border-radius: 8px; margin-bottom: 12px;
+        }
+        .relationship-pair-header {
+            font-size: 0.85rem; color: var(--accent); font-weight: bold; margin-bottom: 10px;
+        }
 
         /* Prompt Area */
         #prompt-container {
@@ -137,9 +199,15 @@
             display: flex; flex-direction: column; flex-shrink: 0; padding-bottom: calc(15px + var(--safe-area-bottom));
         }
         #generated-prompt {
-            height: 100px; background: #080a10; color: #81c784; font-family: 'Menlo', 'Consolas', monospace; 
+            height: 100px; background: #080a10; color: #81c784; font-family: 'Menlo', 'Consolas', monospace;
             border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 0.8rem; resize: none;
         }
+
+        /* Utility */
+        .text-center { text-align: center; }
+        .mb-10 { margin-bottom: 10px; }
+        .mb-20 { margin-bottom: 20px; }
+        .mt-20 { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -148,7 +216,7 @@
 
 <header>
     <button class="menu-trigger" onclick="toggleSidebar()">☰</button>
-    <div class="logo">Puppeteer v7.2</div>
+    <div class="logo">Puppeteer v8</div>
     <button class="btn btn-primary" style="padding: 6px 16px; font-size:0.85rem;" onclick="copyPrompt()">Copy</button>
 </header>
 
@@ -171,42 +239,7 @@
 
     <div id="main-panel">
         <div id="view-char" class="content-view active">
-            <div id="char-editor">
-                <h3>Identity</h3>
-                <div class="row">
-                    <div class="col"><label>名前</label><input type="text" data-key="name" oninput="updateChar()"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>呼称(対ユーザー)</label><input type="text" data-key="userCall" oninput="updateChar()"></div>
-                    <div class="col"><label>関係性</label><input type="text" data-key="relation" oninput="updateChar()"></div>
-                </div>
-
-                <h3>Profile</h3>
-                <label>外見・服装</label><textarea data-key="appearance" rows="2" oninput="updateChar()"></textarea>
-                <label>性格・役割</label><textarea data-key="personality" rows="2" oninput="updateChar()"></textarea>
-                <div class="row">
-                    <div class="col"><label>身体/年齢</label><input type="text" data-key="stats" oninput="updateChar()"></div>
-                    <div class="col"><label>場所</label><input type="text" data-key="location" oninput="updateChar()"></div>
-                </div>
-
-                <h3>Voice & Tone</h3>
-                <div class="row">
-                    <div class="col"><label>一人称</label><input type="text" data-key="p1" oninput="updateChar()"></div>
-                    <div class="col"><label>二人称</label><input type="text" data-key="p2" oninput="updateChar()"></div>
-                </div>
-                <label>語尾・口調</label><input type="text" data-key="tone" oninput="updateChar()">
-                <label style="color:var(--accent); font-weight:bold;">★セリフサンプル</label>
-                <textarea data-key="samples" rows="4" placeholder="口調の例..." oninput="updateChar()"></textarea>
-
-                <h3>Custom Fields</h3>
-                <div id="custom-fields"></div>
-                <button class="btn" style="width:100%; border-style:dashed; margin-top:10px; background:transparent;" onclick="addCustomField()">+ 自由項目追加</button>
-
-                <div style="margin-top:50px; text-align:center;">
-                    <button class="btn btn-danger" style="width:100%;" onclick="deleteChar()">このキャラを削除</button>
-                </div>
-                <div style="height:50px;"></div>
-            </div>
+            <div id="char-editor"></div>
         </div>
 
         <div id="view-world" class="content-view">
@@ -232,46 +265,204 @@
 
     <div id="prompt-container">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span style="font-size:0.75rem; color:var(--sub); font-weight:bold;">GENERATED PROMPT</span>
+            <span style="font-size:0.75rem; color:var(--sub); font-weight:bold;">GENERATION MODE</span>
             <span id="char-count" style="font-size:0.75rem; color:var(--accent); font-weight:bold;">0 Active</span>
         </div>
+
+        <div class="mode-selector">
+            <div class="mode-option">
+                <input type="radio" id="mode-single" name="genMode" value="single" onchange="updateGenerationMode()">
+                <label for="mode-single">単体キャラ</label>
+            </div>
+            <div class="mode-option">
+                <input type="radio" id="mode-multi" name="genMode" value="multi" onchange="updateGenerationMode()">
+                <label for="mode-multi">複数キャラ</label>
+            </div>
+            <div class="mode-option">
+                <input type="radio" id="mode-world" name="genMode" value="world" onchange="updateGenerationMode()">
+                <label for="mode-world">世界観のみ</label>
+            </div>
+            <div class="mode-option">
+                <input type="radio" id="mode-all" name="genMode" value="all" checked onchange="updateGenerationMode()">
+                <label for="mode-all">統合（All）</label>
+            </div>
+        </div>
+
+        <div id="relationship-matrix" style="display:none;"></div>
+
         <textarea id="generated-prompt" readonly onclick="this.select()"></textarea>
     </div>
 </div>
 
 <script>
-    const DB_KEY = 'puppeteer_v7_highvis';
-    
-    // Default Data
-    const initialMobs = [
-        { id: 1, active: true, name: "モブ男", userCall: "君", relation: "友人", appearance: "Tシャツ", personality: "平凡", stats: "170cm", location: "街", p1: "俺", p2: "君", tone: "普通", samples: "「マジかよ」", custom: [] },
-        { id: 2, active: false, name: "モブ女", userCall: "先輩", relation: "後輩", appearance: "制服", personality: "元気", stats: "158cm", location: "学校", p1: "私", p2: "先輩", tone: "JK", samples: "「先輩ちーっす！」", custom: [] },
-        { id: 3, active: false, name: "モブ猫", userCall: "人間", relation: "下僕", appearance: "三毛", personality: "尊大", stats: "30cm", location: "路地", p1: "吾輩", p2: "お前", tone: "猫語", samples: "「にゃあ（餌をよこせ）」", custom: [] }
-    ];
+    const DB_KEY = 'puppeteer_v8_dynamic';
+    const DB_KEY_OLD = 'puppeteer_v7_highvis';
+
+    // Default Character Template with Dynamic Schema
+    function createDefaultCharacter() {
+        return {
+            id: Date.now(),
+            active: false,
+            name: "新規キャラ",
+            sections: [
+                {
+                    id: 'identity',
+                    name: 'Identity',
+                    fixed: true,
+                    fields: [
+                        { key: 'name', label: '名前', value: '', type: 'text', fixed: true },
+                        { key: 'userCall', label: 'ユーザー呼称', value: '', type: 'text', fixed: true }
+                    ]
+                },
+                {
+                    id: 'profile',
+                    name: 'Profile',
+                    fixed: true,
+                    fields: [
+                        { key: 'species', label: '種族', value: '', type: 'text', fixed: true },
+                        { key: 'family', label: '家族構成', value: '', type: 'text', fixed: true },
+                        { key: 'appearance', label: '外見', value: '', type: 'textarea', fixed: true },
+                        { key: 'personality', label: '性格', value: '', type: 'textarea', fixed: true }
+                    ]
+                },
+                {
+                    id: 'memory',
+                    name: 'Memory',
+                    fixed: true,
+                    fields: [
+                        { key: 'memory1', label: 'ユーザーとの思い出1', value: '', type: 'textarea', fixed: true },
+                        { key: 'memory2', label: 'ユーザーとの思い出2', value: '', type: 'textarea', fixed: true },
+                        { key: 'memory3', label: 'ユーザーとの思い出3', value: '', type: 'textarea', fixed: true }
+                    ]
+                },
+                {
+                    id: 'voice',
+                    name: 'Voice',
+                    fixed: true,
+                    fields: [
+                        { key: 'p1', label: '一人称', value: '', type: 'text', fixed: true },
+                        { key: 'p2', label: '二人称', value: '', type: 'text', fixed: true },
+                        { key: 'tone', label: '語尾', value: '', type: 'text', fixed: true },
+                        { key: 'samples', label: 'サンプル', value: '', type: 'textarea', fixed: true }
+                    ]
+                }
+            ]
+        };
+    }
+
+    // Migrate v7 data to v8 format
+    function migrateV7ToV8(oldChar) {
+        const newChar = createDefaultCharacter();
+        newChar.id = oldChar.id;
+        newChar.active = oldChar.active || false;
+
+        // Map old fields to new structure
+        const fieldMapping = {
+            name: ['identity', 'name'],
+            userCall: ['identity', 'userCall'],
+            species: ['profile', 'species'],
+            family: ['profile', 'family'],
+            appearance: ['profile', 'appearance'],
+            personality: ['profile', 'personality'],
+            p1: ['voice', 'p1'],
+            p2: ['voice', 'p2'],
+            tone: ['voice', 'tone'],
+            samples: ['voice', 'samples']
+        };
+
+        for (const [oldKey, [sectionId, fieldKey]] of Object.entries(fieldMapping)) {
+            if (oldChar[oldKey]) {
+                const section = newChar.sections.find(s => s.id === sectionId);
+                if (section) {
+                    const field = section.fields.find(f => f.key === fieldKey);
+                    if (field) {
+                        field.value = oldChar[oldKey];
+                    }
+                }
+            }
+        }
+
+        // Migrate custom fields to a new custom section
+        if (oldChar.custom && oldChar.custom.length > 0) {
+            const customSection = {
+                id: 'custom_' + Date.now(),
+                name: 'Custom (Migrated)',
+                fixed: false,
+                fields: oldChar.custom.map((c, i) => ({
+                    key: 'custom_' + i,
+                    label: c.label,
+                    value: c.value,
+                    type: 'text',
+                    fixed: false
+                }))
+            };
+            newChar.sections.push(customSection);
+        }
+
+        return newChar;
+    }
 
     let appData = {
+        version: 8,
+        generationMode: 'all',
         world: { name: "", setting: "", rules: "", situation: "" },
-        chars: JSON.parse(JSON.stringify(initialMobs)),
+        chars: [],
+        relationships: {}, // Format: "charId1_charId2": { from1to2: "text", from2to1: "text" }
         saves: []
     };
     let editingCharId = null;
 
     // --- Init ---
     function init() {
+        // Try loading v8 data
         const loaded = localStorage.getItem(DB_KEY);
-        if(loaded) {
-            try { appData = {...appData, ...JSON.parse(loaded)}; } catch(e){}
+        if (loaded) {
+            try {
+                appData = {...appData, ...JSON.parse(loaded)};
+            } catch(e) {
+                console.error('Failed to load v8 data:', e);
+            }
+        } else {
+            // Try migrating from v7
+            const oldData = localStorage.getItem(DB_KEY_OLD);
+            if (oldData) {
+                try {
+                    const v7Data = JSON.parse(oldData);
+                    if (v7Data.chars && v7Data.chars.length > 0) {
+                        appData.chars = v7Data.chars.map(c => migrateV7ToV8(c));
+                        appData.world = v7Data.world || appData.world;
+                        saveDB();
+                        alert('v7.2からv8にデータを移行しました！');
+                    }
+                } catch(e) {
+                    console.error('Failed to migrate v7 data:', e);
+                }
+            }
         }
-        if(appData.chars.length === 0) appData.chars = JSON.parse(JSON.stringify(initialMobs));
-        
-        // Ensure active defaults if missing
-        appData.chars.forEach(c => { if(typeof c.active === 'undefined') c.active = false; });
+
+        // Ensure at least one character exists
+        if (appData.chars.length === 0) {
+            const defaultChar = createDefaultCharacter();
+            defaultChar.name = "サンプルキャラ";
+            defaultChar.active = true;
+            // Set some default values
+            const nameField = defaultChar.sections.find(s => s.id === 'identity').fields.find(f => f.key === 'name');
+            nameField.value = "サンプルキャラ";
+            appData.chars.push(defaultChar);
+        }
 
         editingCharId = appData.chars[0].id;
+
+        // Set generation mode
+        document.querySelector(`input[name="genMode"][value="${appData.generationMode}"]`).checked = true;
+
         renderAll();
     }
 
-    function saveDB() { localStorage.setItem(DB_KEY, JSON.stringify(appData)); generatePrompt(); }
+    function saveDB() {
+        localStorage.setItem(DB_KEY, JSON.stringify(appData));
+        generatePrompt();
+    }
 
     // --- UI Logic ---
     function toggleSidebar() {
@@ -287,61 +478,72 @@
         if(t==='save') { document.querySelectorAll('.tab')[2].classList.add('active'); document.getElementById('view-save').classList.add('active'); }
     }
 
-    // --- Renderers ---
-    function renderAll() {
-        renderCharList(); loadCharForm(); loadWorldForm(); renderSaveList(); generatePrompt();
+    window.updateGenerationMode = () => {
+        const mode = document.querySelector('input[name="genMode"]:checked').value;
+        appData.generationMode = mode;
+        saveDB();
+        renderRelationshipMatrix();
     }
 
-    // ★ HIGH VISIBILITY LIST RENDERING
+    // --- Renderers ---
+    function renderAll() {
+        renderCharList();
+        renderCharEditor();
+        loadWorldForm();
+        renderSaveList();
+        renderRelationshipMatrix();
+        generatePrompt();
+    }
+
     function renderCharList() {
         const list = document.getElementById('char-list');
         list.innerHTML = '';
-        
+
         appData.chars.forEach(c => {
             const isActive = c.active;
             const isEditing = c.id === editingCharId;
-            
+
             const div = document.createElement('div');
-            // Add classes for styling
             div.className = `char-item ${isActive ? 'is-active' : ''} ${isEditing ? 'is-editing' : ''}`;
-            
-            // 1. Toggle Switch
+
             const label = document.createElement('label');
             label.className = 'toggle-switch';
-            
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.className = 'toggle-input';
             checkbox.checked = isActive;
-            
+
             const slider = document.createElement('span');
             slider.className = 'toggle-slider';
 
             label.appendChild(checkbox);
             label.appendChild(slider);
 
-            // Toggle Event
             checkbox.addEventListener('change', (e) => {
                 c.active = checkbox.checked;
                 saveDB();
-                renderCharList(); // Re-render for visual update
+                renderCharList();
+                renderRelationshipMatrix();
             });
-            // Stop propagation so clicking toggle doesn't select for edit
             label.addEventListener('click', (e) => e.stopPropagation());
 
-            // 2. Info Area
             const info = document.createElement('div');
             info.className = 'char-info';
+
+            // Get character name from sections
+            const nameField = c.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name');
+            const charName = nameField?.value || c.name || '名無し';
+
             info.innerHTML = `
-                <span class="char-name">${c.name}</span>
+                <span class="char-name">${charName}</span>
                 <span class="char-status">${isActive ? '● ACTIVE' : '○ OFF'}</span>
             `;
 
-            // Row Click Event (Edit Selection)
             div.addEventListener('click', () => {
                 editingCharId = c.id;
                 renderAll();
-                if(window.innerWidth <= 768) toggleSidebar(); 
+                if(window.innerWidth <= 768) toggleSidebar();
             });
 
             div.appendChild(label);
@@ -356,89 +558,457 @@
         document.getElementById('char-count').innerText = `${count} Active`;
     }
 
-    // --- Form Logic ---
-    function loadCharForm() {
+    function renderCharEditor() {
         const c = appData.chars.find(x => x.id === editingCharId);
-        if(!c) return;
-        document.querySelectorAll('#char-editor [data-key]').forEach(el => el.value = c[el.getAttribute('data-key')] || "");
-        
-        const cf = document.getElementById('custom-fields'); cf.innerHTML = '';
-        if(c.custom) c.custom.forEach((f,i) => {
-            const row = document.createElement('div'); row.className = 'row';
-            row.innerHTML = `<input value="${f.label}" oninput="updCust(${i},'label',this.value)" placeholder="項目" style="width:40%"><input value="${f.value}" oninput="updCust(${i},'value',this.value)" placeholder="値"><button class="btn" style="padding:0 15px;" onclick="delCust(${i})">×</button>`;
-            cf.appendChild(row);
+        if (!c) return;
+
+        const editor = document.getElementById('char-editor');
+        editor.innerHTML = '';
+
+        // Render each section
+        c.sections.forEach((section, sectionIdx) => {
+            const card = document.createElement('div');
+            card.className = 'section-card';
+
+            const header = document.createElement('div');
+            header.className = 'section-header';
+
+            const title = document.createElement('div');
+            title.className = 'section-title';
+            title.textContent = section.name;
+
+            const actions = document.createElement('div');
+            actions.className = 'section-actions';
+
+            // Add Field button
+            const addFieldBtn = document.createElement('button');
+            addFieldBtn.className = 'btn btn-success';
+            addFieldBtn.textContent = '+ フィールド';
+            addFieldBtn.onclick = () => addField(sectionIdx);
+            actions.appendChild(addFieldBtn);
+
+            // Delete Section button (only for non-fixed sections)
+            if (!section.fixed) {
+                const delSectionBtn = document.createElement('button');
+                delSectionBtn.className = 'btn btn-danger';
+                delSectionBtn.textContent = '× 削除';
+                delSectionBtn.onclick = () => deleteSection(sectionIdx);
+                actions.appendChild(delSectionBtn);
+            }
+
+            header.appendChild(title);
+            header.appendChild(actions);
+            card.appendChild(header);
+
+            // Render fields in grid
+            const grid = document.createElement('div');
+            grid.className = 'fields-grid';
+
+            section.fields.forEach((field, fieldIdx) => {
+                const fieldContainer = document.createElement('div');
+                fieldContainer.className = 'field-item-inline';
+
+                const fieldItem = document.createElement('div');
+                fieldItem.className = 'field-item';
+
+                const label = document.createElement('label');
+                label.textContent = field.label;
+                fieldItem.appendChild(label);
+
+                let input;
+                if (field.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 3;
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                }
+                input.value = field.value || '';
+                input.oninput = () => updateField(sectionIdx, fieldIdx, input.value);
+                fieldItem.appendChild(input);
+
+                fieldContainer.appendChild(fieldItem);
+
+                // Delete field button (only for non-fixed fields)
+                if (!field.fixed) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-danger';
+                    delBtn.textContent = '×';
+                    delBtn.onclick = () => deleteField(sectionIdx, fieldIdx);
+                    fieldContainer.appendChild(delBtn);
+                }
+
+                grid.appendChild(fieldContainer);
+            });
+
+            card.appendChild(grid);
+            editor.appendChild(card);
         });
+
+        // Add Section button
+        const addSectionBtn = document.createElement('button');
+        addSectionBtn.className = 'btn btn-primary btn-dashed';
+        addSectionBtn.style.width = '100%';
+        addSectionBtn.style.marginBottom = '20px';
+        addSectionBtn.textContent = '+ 新規セクション追加';
+        addSectionBtn.onclick = addSection;
+        editor.appendChild(addSectionBtn);
+
+        // Delete Character button
+        const deleteCharBtn = document.createElement('button');
+        deleteCharBtn.className = 'btn btn-danger';
+        deleteCharBtn.style.width = '100%';
+        deleteCharBtn.style.marginTop = '50px';
+        deleteCharBtn.textContent = 'このキャラを削除';
+        deleteCharBtn.onclick = deleteChar;
+        editor.appendChild(deleteCharBtn);
+
+        const spacer = document.createElement('div');
+        spacer.style.height = '50px';
+        editor.appendChild(spacer);
     }
 
-    window.updateChar = () => {
+    function updateField(sectionIdx, fieldIdx, value) {
         const c = appData.chars.find(x => x.id === editingCharId);
-        document.querySelectorAll('#char-editor [data-key]').forEach(el => c[el.getAttribute('data-key')] = el.value);
-        saveDB(); 
-        // Update list name only, avoid full re-render while typing
-        const activeItem = document.querySelector('.char-item.is-editing .char-name');
-        if(activeItem) activeItem.innerText = c.name;
-    }
-    
-    window.addCustomField = () => { appData.chars.find(x=>x.id===editingCharId).custom.push({label:"",value:""}); saveDB(); loadCharForm(); }
-    window.updCust = (i,k,v) => { appData.chars.find(x=>x.id===editingCharId).custom[i][k] = v; saveDB(); }
-    window.delCust = (i) => { appData.chars.find(x=>x.id===editingCharId).custom.splice(i,1); saveDB(); loadCharForm(); }
+        c.sections[sectionIdx].fields[fieldIdx].value = value;
 
-    window.addNewChar = () => { 
-        const n = JSON.parse(JSON.stringify(initialMobs[0])); 
-        n.id=Date.now(); n.name="新規キャラ"; n.active=false; 
-        appData.chars.push(n); editingCharId=n.id; 
-        saveDB(); renderAll(); 
+        // Update character name in real-time
+        if (c.sections[sectionIdx].id === 'identity' &&
+            c.sections[sectionIdx].fields[fieldIdx].key === 'name') {
+            c.name = value;
+            const activeItem = document.querySelector('.char-item.is-editing .char-name');
+            if (activeItem) activeItem.innerText = value || '名無し';
+        }
+
+        saveDB();
     }
+
+    function addSection() {
+        const c = appData.chars.find(x => x.id === editingCharId);
+        const sectionName = prompt('セクション名を入力してください:');
+        if (!sectionName) return;
+
+        const newSection = {
+            id: 'section_' + Date.now(),
+            name: sectionName,
+            fixed: false,
+            fields: []
+        };
+        c.sections.push(newSection);
+        saveDB();
+        renderCharEditor();
+    }
+
+    function deleteSection(sectionIdx) {
+        const c = appData.chars.find(x => x.id === editingCharId);
+        if (c.sections[sectionIdx].fixed) {
+            alert('固定セクションは削除できません');
+            return;
+        }
+        if (!confirm(`セクション「${c.sections[sectionIdx].name}」を削除しますか？`)) return;
+        c.sections.splice(sectionIdx, 1);
+        saveDB();
+        renderCharEditor();
+    }
+
+    function addField(sectionIdx) {
+        const c = appData.chars.find(x => x.id === editingCharId);
+        const fieldLabel = prompt('フィールド名を入力してください:');
+        if (!fieldLabel) return;
+
+        const fieldType = confirm('複数行のテキストエリアにしますか？\n（OKでテキストエリア、キャンセルで1行入力）') ? 'textarea' : 'text';
+
+        const newField = {
+            key: 'field_' + Date.now(),
+            label: fieldLabel,
+            value: '',
+            type: fieldType,
+            fixed: false
+        };
+        c.sections[sectionIdx].fields.push(newField);
+        saveDB();
+        renderCharEditor();
+    }
+
+    function deleteField(sectionIdx, fieldIdx) {
+        const c = appData.chars.find(x => x.id === editingCharId);
+        const field = c.sections[sectionIdx].fields[fieldIdx];
+        if (field.fixed) {
+            alert('固定フィールドは削除できません');
+            return;
+        }
+        if (!confirm(`フィールド「${field.label}」を削除しますか？`)) return;
+        c.sections[sectionIdx].fields.splice(fieldIdx, 1);
+        saveDB();
+        renderCharEditor();
+    }
+
+    window.addNewChar = () => {
+        const newChar = createDefaultCharacter();
+        newChar.id = Date.now();
+        newChar.name = "新規キャラ";
+        newChar.active = false;
+        appData.chars.push(newChar);
+        editingCharId = newChar.id;
+        saveDB();
+        renderAll();
+    }
+
     window.deleteChar = () => {
-        if(appData.chars.length <= 1 || !confirm("削除しますか？")) return;
-        appData.chars = appData.chars.filter(c => c.id !== editingCharId);
-        editingCharId = appData.chars[0].id; saveDB(); renderAll();
+        if (appData.chars.length <= 1) {
+            alert('最後のキャラクターは削除できません');
+            return;
+        }
+        const c = appData.chars.find(x => x.id === editingCharId);
+        const nameField = c.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name');
+        const charName = nameField?.value || c.name || '名無し';
+        if (!confirm(`「${charName}」を削除しますか？`)) return;
+
+        appData.chars = appData.chars.filter(ch => ch.id !== editingCharId);
+        editingCharId = appData.chars[0].id;
+        saveDB();
+        renderAll();
+    }
+
+    // --- Relationship Matrix ---
+    function renderRelationshipMatrix() {
+        const matrix = document.getElementById('relationship-matrix');
+        const activeChars = appData.chars.filter(c => c.active);
+        const mode = appData.generationMode;
+
+        // Only show for multi or all mode with 2+ active characters
+        if ((mode === 'multi' || mode === 'all') && activeChars.length >= 2) {
+            matrix.style.display = 'block';
+            matrix.innerHTML = '<div class="section-title">キャラクター間関係性</div>';
+
+            // Generate all pairs
+            for (let i = 0; i < activeChars.length; i++) {
+                for (let j = i + 1; j < activeChars.length; j++) {
+                    const char1 = activeChars[i];
+                    const char2 = activeChars[j];
+
+                    const name1 = char1.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name')?.value || char1.name;
+                    const name2 = char2.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name')?.value || char2.name;
+
+                    const relKey = `${char1.id}_${char2.id}`;
+                    if (!appData.relationships[relKey]) {
+                        appData.relationships[relKey] = { from1to2: '', from2to1: '' };
+                    }
+
+                    const pairDiv = document.createElement('div');
+                    pairDiv.className = 'relationship-pair';
+
+                    pairDiv.innerHTML = `
+                        <div class="relationship-pair-header">${name1} ⇄ ${name2}</div>
+                        <label>${name1}から見た${name2}</label>
+                        <input type="text" value="${appData.relationships[relKey].from1to2 || ''}"
+                               oninput="updateRelationship('${relKey}', 'from1to2', this.value)"
+                               placeholder="例：幼馴染、信頼できる仲間">
+                        <label style="margin-top:10px;">${name2}から見た${name1}</label>
+                        <input type="text" value="${appData.relationships[relKey].from2to1 || ''}"
+                               oninput="updateRelationship('${relKey}', 'from2to1', this.value)"
+                               placeholder="例：憧れの先輩、頼れる相棒">
+                    `;
+
+                    matrix.appendChild(pairDiv);
+                }
+            }
+        } else {
+            matrix.style.display = 'none';
+        }
+    }
+
+    window.updateRelationship = (relKey, direction, value) => {
+        if (!appData.relationships[relKey]) {
+            appData.relationships[relKey] = { from1to2: '', from2to1: '' };
+        }
+        appData.relationships[relKey][direction] = value;
+        saveDB();
     }
 
     // --- World & Save ---
     function loadWorldForm() {
-        document.getElementById('world-name').value = appData.world.name;
-        document.getElementById('world-setting').value = appData.world.setting;
-        document.getElementById('world-rules').value = appData.world.rules;
-        document.getElementById('world-situation').value = appData.world.situation;
+        document.getElementById('world-name').value = appData.world.name || '';
+        document.getElementById('world-setting').value = appData.world.setting || '';
+        document.getElementById('world-rules').value = appData.world.rules || '';
+        document.getElementById('world-situation').value = appData.world.situation || '';
     }
+
     window.updateWorld = () => {
         appData.world = {
             name: document.getElementById('world-name').value,
             setting: document.getElementById('world-setting').value,
             rules: document.getElementById('world-rules').value,
             situation: document.getElementById('world-situation').value
-        }; saveDB();
+        };
+        saveDB();
     }
+
     window.createSavePoint = () => {
-        const n = document.getElementById('save-name').value; if(!n) return;
-        appData.saves.unshift({name:n, time:new Date().toLocaleString(), data:JSON.parse(JSON.stringify({w:appData.world, c:appData.chars}))});
-        document.getElementById('save-name').value=''; saveDB(); renderSaveList();
+        const n = document.getElementById('save-name').value;
+        if (!n) {
+            alert('保存名を入力してください');
+            return;
+        }
+        appData.saves.unshift({
+            name: n,
+            time: new Date().toLocaleString(),
+            data: JSON.parse(JSON.stringify({
+                w: appData.world,
+                c: appData.chars,
+                r: appData.relationships
+            }))
+        });
+        document.getElementById('save-name').value = '';
+        saveDB();
+        renderSaveList();
     }
+
     function renderSaveList() {
-        const l = document.getElementById('save-list'); l.innerHTML='';
-        appData.saves.forEach((s,i) => {
-            const d = document.createElement('div'); 
+        const l = document.getElementById('save-list');
+        l.innerHTML = '';
+        appData.saves.forEach((s, i) => {
+            const d = document.createElement('div');
             d.style.cssText = 'padding:15px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;';
-            d.innerHTML = `<div><div style="font-weight:bold">${s.name}</div><div style="font-size:0.75rem; color:#888">${s.time}</div></div><div style="display:flex; gap:10px;"><button class="btn btn-primary" onclick="loadSave(${i})">Load</button> <button class="btn btn-danger" onclick="delSave(${i})">Del</button></div>`;
+            d.innerHTML = `
+                <div>
+                    <div style="font-weight:bold">${s.name}</div>
+                    <div style="font-size:0.75rem; color:#888">${s.time}</div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="loadSave(${i})">Load</button>
+                    <button class="btn btn-danger" onclick="delSave(${i})">Del</button>
+                </div>
+            `;
             l.appendChild(d);
         });
     }
-    window.loadSave = (i) => { if(confirm("ロードしますか？")) { const s=appData.saves[i]; appData.world=s.data.w; appData.chars=s.data.c; editingCharId=appData.chars[0].id; saveDB(); renderAll(); } }
-    window.delSave = (i) => { appData.saves.splice(i,1); saveDB(); renderSaveList(); }
 
-    // --- Prompt ---
+    window.loadSave = (i) => {
+        if (!confirm('現在の状態を破棄してロードしますか？')) return;
+        const s = appData.saves[i];
+        appData.world = s.data.w;
+        appData.chars = s.data.c;
+        appData.relationships = s.data.r || {};
+        editingCharId = appData.chars[0]?.id || null;
+        saveDB();
+        renderAll();
+    }
+
+    window.delSave = (i) => {
+        if (!confirm('このセーブポイントを削除しますか？')) return;
+        appData.saves.splice(i, 1);
+        saveDB();
+        renderSaveList();
+    }
+
+    // --- Prompt Generation ---
     function generatePrompt() {
-        const ac = appData.chars.filter(c => c.active); const w = appData.world;
-        let p = `# System: Multi-Roleplay\n\n## 1. World Context\n- Name: ${w.name}\n- Setting: ${w.setting.replace(/\n/g,' ')}\n- Rules: ${w.rules.replace(/\n/g,' ')}\n- Situation: ${w.situation}\n\n## 2. Characters\n`;
-        ac.forEach(c => {
-            p += `\n### ■ ${c.name}\n- Role: ${c.role}\n- UserCall: ${c.userCall} (${c.relation})\n- Appearance: ${c.appearance}\n- Personality: ${c.personality}\n- Stats: ${c.stats} / ${c.location}\n- Speech: P1=${c.p1}, P2=${c.p2}, Tone=${c.tone}\n- Samples:\n${(c.samples||"").replace(/^/gm,'  > ')}\n`;
-            if(c.custom && c.custom.length) p += `- Extra: ${c.custom.map(f=>`${f.label}:${f.value}`).join(', ')}\n`;
-        });
-        p += `\n## 3. Instructions\n- Strictly follow the personas and speech samples.\n- Identify speaker with [Name] at start.`;
+        const mode = appData.generationMode;
+        const w = appData.world;
+        let activeChars = appData.chars.filter(c => c.active);
+        let p = '';
+
+        // Mode: single - current editing character only
+        if (mode === 'single') {
+            const currentChar = appData.chars.find(c => c.id === editingCharId);
+            if (currentChar) {
+                activeChars = [currentChar];
+                p = generateCharacterPrompt(activeChars, false);
+            }
+        }
+        // Mode: multi - active characters only
+        else if (mode === 'multi') {
+            p = generateCharacterPrompt(activeChars, false);
+        }
+        // Mode: world - world only
+        else if (mode === 'world') {
+            p = generateWorldPrompt(w);
+        }
+        // Mode: all - world + active characters (default)
+        else {
+            p = generateWorldPrompt(w);
+            if (activeChars.length > 0) {
+                p += '\n\n' + generateCharacterPrompt(activeChars, true);
+            }
+        }
+
         document.getElementById('generated-prompt').value = p;
     }
-    window.copyPrompt = () => { document.getElementById('generated-prompt').select(); document.execCommand('copy'); alert("プロンプトをコピーしました"); }
+
+    function generateWorldPrompt(w) {
+        return `# World Context
+
+## Setting
+- Name: ${w.name || '(未設定)'}
+- Setting: ${w.setting || '(未設定)'}
+- Rules: ${w.rules || '(未設定)'}
+- Current Situation: ${w.situation || '(未設定)'}`;
+    }
+
+    function generateCharacterPrompt(chars, includeHeader) {
+        let p = includeHeader ? '# Characters\n\n' : '';
+
+        chars.forEach((c, idx) => {
+            const nameField = c.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name');
+            const charName = nameField?.value || c.name || '名無し';
+
+            p += `## ${idx + 1}. ${charName}\n\n`;
+
+            // Output all sections and fields
+            c.sections.forEach(section => {
+                if (section.fields.length === 0) return;
+
+                p += `### ${section.name}\n`;
+                section.fields.forEach(field => {
+                    if (field.value && field.value.trim()) {
+                        p += `- ${field.label}: ${field.value.replace(/\n/g, ' ')}\n`;
+                    }
+                });
+                p += '\n';
+            });
+
+            // Add relationships if in multi/all mode and relationships exist
+            const mode = appData.generationMode;
+            if ((mode === 'multi' || mode === 'all') && chars.length >= 2) {
+                const relatedChars = chars.filter(other => other.id !== c.id);
+                const relationships = [];
+
+                relatedChars.forEach(other => {
+                    const otherName = other.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name')?.value || other.name;
+
+                    // Check both directions of relationship
+                    const key1 = `${c.id}_${other.id}`;
+                    const key2 = `${other.id}_${c.id}`;
+
+                    if (appData.relationships[key1]?.from1to2) {
+                        relationships.push(`  - ${otherName}: ${appData.relationships[key1].from1to2}`);
+                    } else if (appData.relationships[key2]?.from2to1) {
+                        relationships.push(`  - ${otherName}: ${appData.relationships[key2].from2to1}`);
+                    }
+                });
+
+                if (relationships.length > 0) {
+                    p += `### Relationships\n${relationships.join('\n')}\n\n`;
+                }
+            }
+        });
+
+        return p;
+    }
+
+    window.copyPrompt = () => {
+        const textarea = document.getElementById('generated-prompt');
+        textarea.select();
+        document.execCommand('copy');
+
+        // Modern API fallback
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(textarea.value);
+        }
+
+        alert('プロンプトをコピーしました');
+    }
 
     init();
 </script>
