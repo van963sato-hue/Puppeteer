@@ -179,6 +179,11 @@
         }
         .mode-option label {
             margin: 0; cursor: pointer; color: var(--text); font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        @media (max-width: 500px) {
+            .mode-option label { font-size: 0.75rem; }
+            #editing-char-name { display: none; }
         }
 
         /* Relationship Matrix */
@@ -228,8 +233,9 @@
 
 <div id="container">
     <div id="sidebar">
-        <div style="padding:15px; font-size:0.8rem; color:var(--sub); border-bottom:1px solid var(--border); background:rgba(0,0,0,0.2);">
-            スイッチONでプロンプトに追加
+        <div style="padding:15px; font-size:0.75rem; color:var(--sub); border-bottom:1px solid var(--border); background:rgba(0,0,0,0.2); line-height:1.5;">
+            <div style="margin-bottom:5px;">📝 <strong>クリック</strong>: 編集対象に切替</div>
+            <div>🔘 <strong>スイッチON</strong>: プロンプトに追加</div>
         </div>
         <div id="char-list" style="flex:1; overflow-y:auto;"></div>
         <div style="padding:15px;">
@@ -266,17 +272,20 @@
     <div id="prompt-container">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <span style="font-size:0.75rem; color:var(--sub); font-weight:bold;">GENERATION MODE</span>
-            <span id="char-count" style="font-size:0.75rem; color:var(--accent); font-weight:bold;">0 Active</span>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <span id="editing-char-name" style="font-size:0.75rem; color:var(--warning); font-weight:bold;">編集中: -</span>
+                <span id="char-count" style="font-size:0.75rem; color:var(--accent); font-weight:bold;">0 Active</span>
+            </div>
         </div>
 
         <div class="mode-selector">
             <div class="mode-option">
                 <input type="radio" id="mode-single" name="genMode" value="single" onchange="updateGenerationMode()">
-                <label for="mode-single">単体キャラ</label>
+                <label for="mode-single">単体キャラ（編集中のみ）</label>
             </div>
             <div class="mode-option">
                 <input type="radio" id="mode-multi" name="genMode" value="multi" onchange="updateGenerationMode()">
-                <label for="mode-multi">複数キャラ</label>
+                <label for="mode-multi">複数キャラ（Active）</label>
             </div>
             <div class="mode-option">
                 <input type="radio" id="mode-world" name="genMode" value="world" onchange="updateGenerationMode()">
@@ -556,6 +565,14 @@
     function updateCharCount() {
         const count = appData.chars.filter(c => c.active).length;
         document.getElementById('char-count').innerText = `${count} Active`;
+
+        // Update editing character name
+        const editingChar = appData.chars.find(c => c.id === editingCharId);
+        if (editingChar) {
+            const nameField = editingChar.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name');
+            const charName = nameField?.value || editingChar.name || '名無し';
+            document.getElementById('editing-char-name').innerText = `編集中: ${charName}`;
+        }
     }
 
     function renderCharEditor() {
