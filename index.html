@@ -36,14 +36,30 @@
         }
         .logo { font-weight:bold; color:var(--accent); letter-spacing: 1px; }
         .menu-trigger { font-size: 1.5rem; background: none; border: none; color: #fff; padding: 5px; cursor: pointer; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
 
-        /* Tabs */
-        .tabs { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-        .tab {
-            flex: 1; text-align: center; padding: 12px 0; font-size: 0.9rem; color: var(--sub);
-            border-bottom: 3px solid transparent; cursor: pointer; transition: 0.2s;
+        /* Menu Panel */
+        #menu-panel {
+            position: fixed; top: 50px; left: 0; width: 280px; height: calc(100vh - 50px);
+            background: var(--panel); border-right: 1px solid var(--border);
+            transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 250; display: flex; flex-direction: column;
         }
-        .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; background: var(--panel); }
+        #menu-panel.open { transform: translateX(0); }
+        .menu-item {
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            cursor: pointer; transition: background 0.2s; font-size: 0.95rem;
+        }
+        .menu-item:hover { background: rgba(92, 156, 230, 0.1); }
+        .menu-item.active {
+            background: rgba(92, 156, 230, 0.15); color: var(--accent);
+            border-left: 4px solid var(--accent); font-weight: bold;
+        }
+        .menu-section-title {
+            padding: 12px 20px; font-size: 0.7rem; color: var(--sub);
+            text-transform: uppercase; letter-spacing: 1px; font-weight: bold;
+            background: rgba(0, 0, 0, 0.3);
+        }
 
         /* Container */
         #container { display: flex; flex: 1; overflow: hidden; position: relative; }
@@ -198,15 +214,40 @@
             font-size: 0.85rem; color: var(--accent); font-weight: bold; margin-bottom: 10px;
         }
 
-        /* Prompt Area */
-        #prompt-container {
-            border-top: 1px solid var(--border); background: var(--panel); padding: 15px;
-            display: flex; flex-direction: column; flex-shrink: 0; padding-bottom: calc(15px + var(--safe-area-bottom));
+        /* Prompt Panel */
+        #prompt-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--panel); border-top: 2px solid var(--border);
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 150; max-height: 70vh; display: flex; flex-direction: column;
+            padding-bottom: var(--safe-area-bottom);
+        }
+        #prompt-panel.open { transform: translateY(0); }
+        #prompt-panel-header {
+            padding: 12px 15px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        #prompt-panel-title { font-weight: bold; color: var(--accent); font-size: 0.9rem; }
+        #prompt-panel-content {
+            padding: 15px; overflow-y: auto; flex: 1;
         }
         #generated-prompt {
-            height: 100px; background: #080a10; color: #81c784; font-family: 'Menlo', 'Consolas', monospace;
-            border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 0.8rem; resize: none;
+            min-height: 150px; background: #080a10; color: #81c784; font-family: 'Menlo', 'Consolas', monospace;
+            border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 0.8rem; resize: vertical;
         }
+        .prompt-export-options {
+            display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center;
+        }
+        .format-selector {
+            display: flex; gap: 8px; align-items: center; padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3); border-radius: 6px;
+        }
+        .format-selector label {
+            margin: 0; font-size: 0.85rem; color: var(--text); cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .format-selector input[type="radio"] { margin: 0; cursor: pointer; }
 
         /* Utility */
         .text-center { text-align: center; }
@@ -217,18 +258,36 @@
 </head>
 <body>
 
-<div id="overlay" onclick="toggleSidebar()"></div>
+<div id="overlay" onclick="closeAllPanels()"></div>
 
 <header>
-    <button class="menu-trigger" onclick="toggleSidebar()">☰</button>
+    <button class="menu-trigger" onclick="toggleMenu()">☰</button>
     <div class="logo">Puppeteer v8</div>
-    <button class="btn btn-primary" style="padding: 6px 16px; font-size:0.85rem;" onclick="copyPrompt()">Copy</button>
+    <div class="header-actions">
+        <button class="menu-trigger" onclick="toggleSidebar()">👥</button>
+        <button class="menu-trigger" onclick="togglePromptPanel()">📊</button>
+    </div>
 </header>
 
-<div class="tabs">
-    <div class="tab active" onclick="setTab('char')">キャラ設定</div>
-    <div class="tab" onclick="setTab('world')">世界観</div>
-    <div class="tab" onclick="setTab('save')">保存/読込</div>
+<div id="menu-panel">
+    <div class="menu-section-title">セクション</div>
+    <div class="menu-item active" onclick="setTabFromMenu('char')">
+        <div>📝 キャラ設定</div>
+    </div>
+    <div class="menu-item" onclick="setTabFromMenu('world')">
+        <div>🌍 世界観</div>
+    </div>
+    <div class="menu-item" onclick="setTabFromMenu('save')">
+        <div>💾 保存/読込</div>
+    </div>
+    <div style="flex: 1;"></div>
+    <div class="menu-section-title">パネル</div>
+    <div class="menu-item" onclick="toggleSidebar(); toggleMenu();">
+        <div>👥 キャラ選択</div>
+    </div>
+    <div class="menu-item" onclick="togglePromptPanel(); toggleMenu();">
+        <div>📊 プロンプト生成</div>
+    </div>
 </div>
 
 <div id="container">
@@ -269,10 +328,18 @@
         </div>
     </div>
 
-    <div id="prompt-container">
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+    </div>
+</div>
+
+<div id="prompt-panel">
+    <div id="prompt-panel-header">
+        <div id="prompt-panel-title">📊 プロンプト生成</div>
+        <button class="menu-trigger" onclick="togglePromptPanel()">✕</button>
+    </div>
+    <div id="prompt-panel-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; flex-wrap: wrap; gap: 8px;">
             <span style="font-size:0.75rem; color:var(--sub); font-weight:bold;">GENERATION MODE</span>
-            <div style="display:flex; gap:15px; align-items:center;">
+            <div style="display:flex; gap:15px; align-items:center; flex-wrap: wrap;">
                 <span id="editing-char-name" style="font-size:0.75rem; color:var(--warning); font-weight:bold;">編集中: -</span>
                 <span id="char-count" style="font-size:0.75rem; color:var(--accent); font-weight:bold;">0 Active</span>
             </div>
@@ -300,6 +367,15 @@
         <div id="relationship-matrix" style="display:none;"></div>
 
         <textarea id="generated-prompt" readonly onclick="this.select()"></textarea>
+
+        <div class="prompt-export-options">
+            <div class="format-selector">
+                <label><input type="radio" name="exportFormat" value="md" checked> .md</label>
+                <label><input type="radio" name="exportFormat" value="txt"> .txt</label>
+            </div>
+            <button class="btn btn-primary" onclick="copyPrompt()" style="padding: 8px 16px;">📋 コピー</button>
+            <button class="btn btn-success" onclick="downloadPrompt()" style="padding: 8px 16px;">💾 ダウンロード</button>
+        </div>
     </div>
 </div>
 
@@ -474,17 +550,68 @@
     }
 
     // --- UI Logic ---
+    function closeAllPanels() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('menu-panel').classList.remove('open');
+        document.getElementById('overlay').classList.remove('open');
+    }
+
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('overlay').classList.toggle('open');
+        const sidebar = document.getElementById('sidebar');
+        const menu = document.getElementById('menu-panel');
+        const overlay = document.getElementById('overlay');
+
+        if (sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        } else {
+            menu.classList.remove('open');
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+        }
+    }
+
+    function toggleMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const menu = document.getElementById('menu-panel');
+        const overlay = document.getElementById('overlay');
+
+        if (menu.classList.contains('open')) {
+            menu.classList.remove('open');
+            overlay.classList.remove('open');
+        } else {
+            sidebar.classList.remove('open');
+            menu.classList.add('open');
+            overlay.classList.add('open');
+        }
+    }
+
+    function togglePromptPanel() {
+        document.getElementById('prompt-panel').classList.toggle('open');
     }
 
     function setTab(t) {
-        document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
         document.querySelectorAll('.content-view').forEach(e => e.classList.remove('active'));
-        if(t==='char') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('view-char').classList.add('active'); }
-        if(t==='world') { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('view-world').classList.add('active'); }
-        if(t==='save') { document.querySelectorAll('.tab')[2].classList.add('active'); document.getElementById('view-save').classList.add('active'); }
+        if(t==='char') { document.getElementById('view-char').classList.add('active'); }
+        if(t==='world') { document.getElementById('view-world').classList.add('active'); }
+        if(t==='save') { document.getElementById('view-save').classList.add('active'); }
+    }
+
+    function setTabFromMenu(t) {
+        // Update menu items
+        document.querySelectorAll('#menu-panel .menu-item').forEach((item, idx) => {
+            if (idx < 3) item.classList.remove('active');
+        });
+        const menuItems = document.querySelectorAll('#menu-panel .menu-item');
+        if(t==='char') menuItems[0].classList.add('active');
+        if(t==='world') menuItems[1].classList.add('active');
+        if(t==='save') menuItems[2].classList.add('active');
+
+        // Switch view
+        setTab(t);
+
+        // Close menu
+        toggleMenu();
     }
 
     window.updateGenerationMode = () => {
@@ -1025,6 +1152,34 @@
         }
 
         alert('プロンプトをコピーしました');
+    }
+
+    window.downloadPrompt = () => {
+        const textarea = document.getElementById('generated-prompt');
+        const format = document.querySelector('input[name="exportFormat"]:checked').value;
+        const content = textarea.value;
+
+        // Get character name for filename
+        const editingChar = appData.chars.find(c => c.id === editingCharId);
+        let filename = 'prompt';
+        if (editingChar) {
+            const nameField = editingChar.sections.find(s => s.id === 'identity')?.fields.find(f => f.key === 'name');
+            const charName = nameField?.value || editingChar.name || 'prompt';
+            filename = charName.replace(/[^a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_');
+        }
+
+        // Create blob and download
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(`プロンプトを ${filename}.${format} としてダウンロードしました`);
     }
 
     init();
