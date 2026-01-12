@@ -248,6 +248,57 @@
         }
         .format-selector input[type="radio"] { margin: 0; cursor: pointer; }
 
+        /* Cloud Sync Panel */
+        #cloud-sync-panel {
+            position: fixed; bottom: 20px; right: 20px; width: 280px;
+            background: var(--panel); border: 2px solid var(--border);
+            border-radius: 12px; padding: 15px; z-index: 300;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        #cloud-sync-panel.minimized {
+            width: auto; padding: 10px;
+        }
+        .cloud-sync-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+        }
+        .cloud-sync-title {
+            font-weight: bold; color: var(--accent); font-size: 0.9rem;
+        }
+        .minimize-btn {
+            background: none; border: none; color: var(--sub);
+            cursor: pointer; font-size: 1.2rem; padding: 0;
+        }
+        .cloud-sync-content { display: flex; flex-direction: column; gap: 8px; }
+        #cloud-sync-panel.minimized .cloud-sync-content { display: none; }
+        .cloud-user-info {
+            font-size: 0.75rem; color: var(--sub); padding: 8px;
+            background: rgba(0, 0, 0, 0.3); border-radius: 6px;
+            word-break: break-all;
+        }
+        .cloud-btn {
+            padding: 10px; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 0.85rem; font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .cloud-btn:active { transform: scale(0.98); }
+        .cloud-btn-login {
+            background: #4285f4; color: white;
+        }
+        .cloud-btn-upload {
+            background: var(--success); color: white;
+        }
+        .cloud-btn-download {
+            background: var(--accent); color: white;
+        }
+        .cloud-btn-logout {
+            background: var(--danger); color: white;
+        }
+        .cloud-status {
+            font-size: 0.7rem; color: var(--warning);
+            text-align: center; padding: 5px;
+        }
+
         /* Utility */
         .text-center { text-align: center; }
         .mb-10 { margin-bottom: 10px; }
@@ -378,7 +429,63 @@
     </div>
 </div>
 
-<script>
+<div id="cloud-sync-panel">
+    <div class="cloud-sync-header">
+        <div class="cloud-sync-title">☁️ クラウド同期</div>
+        <button class="minimize-btn" onclick="toggleCloudPanel()">−</button>
+    </div>
+    <div class="cloud-sync-content">
+        <div id="cloud-user-info" class="cloud-user-info" style="display: none;">
+            <div><strong>ログイン中:</strong></div>
+            <div id="cloud-user-email"></div>
+        </div>
+        <div id="cloud-status" class="cloud-status"></div>
+        <button id="cloud-login-btn" class="cloud-btn cloud-btn-login" onclick="loginWithGoogle()">
+            🔐 Googleでログイン
+        </button>
+        <button id="cloud-upload-btn" class="cloud-btn cloud-btn-upload" onclick="uploadToCloud()" style="display: none;">
+            ⬆️ クラウドへ保存
+        </button>
+        <button id="cloud-download-btn" class="cloud-btn cloud-btn-download" onclick="downloadFromCloud()" style="display: none;">
+            ⬇️ クラウドから復元
+        </button>
+        <button id="cloud-logout-btn" class="cloud-btn cloud-btn-logout" onclick="logoutFromGoogle()" style="display: none;">
+            🚪 ログアウト
+        </button>
+    </div>
+</div>
+
+<script type="module">
+    // Firebase SDK imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Firebase configuration
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    let firebaseApp, auth, db;
+    try {
+        firebaseApp = initializeApp(firebaseConfig);
+        auth = getAuth(firebaseApp);
+        db = getFirestore(firebaseApp);
+        console.log('Firebase initialized successfully');
+    } catch (error) {
+        console.error('Firebase initialization error:', error);
+    }
+
+    const APP_UNIQUE_KEY = 'puppeteer_v8';
+    const CHUNK_SIZE = 800 * 1024; // 800KB in bytes
+
     const DB_KEY = 'puppeteer_v8_dynamic';
     const DB_KEY_OLD = 'puppeteer_v7_highvis';
 
@@ -495,6 +602,171 @@
         saves: []
     };
     let editingCharId = null;
+    let currentUser = null;
+
+    // --- Cloud Sync Functions ---
+    function toggleCloudPanel() {
+        document.getElementById('cloud-sync-panel').classList.toggle('minimized');
+        const btn = document.querySelector('.minimize-btn');
+        btn.textContent = document.getElementById('cloud-sync-panel').classList.contains('minimized') ? '☁️' : '−';
+    }
+
+    function updateCloudUI(user) {
+        currentUser = user;
+        const loginBtn = document.getElementById('cloud-login-btn');
+        const uploadBtn = document.getElementById('cloud-upload-btn');
+        const downloadBtn = document.getElementById('cloud-download-btn');
+        const logoutBtn = document.getElementById('cloud-logout-btn');
+        const userInfo = document.getElementById('cloud-user-info');
+        const userEmail = document.getElementById('cloud-user-email');
+
+        if (user) {
+            loginBtn.style.display = 'none';
+            uploadBtn.style.display = 'block';
+            downloadBtn.style.display = 'block';
+            logoutBtn.style.display = 'block';
+            userInfo.style.display = 'block';
+            userEmail.textContent = user.email;
+        } else {
+            loginBtn.style.display = 'block';
+            uploadBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            logoutBtn.style.display = 'none';
+            userInfo.style.display = 'none';
+        }
+    }
+
+    function setCloudStatus(message, isError = false) {
+        const status = document.getElementById('cloud-status');
+        status.textContent = message;
+        status.style.color = isError ? 'var(--danger)' : 'var(--warning)';
+    }
+
+    window.loginWithGoogle = async () => {
+        try {
+            setCloudStatus('ログイン中...');
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            updateCloudUI(result.user);
+            setCloudStatus('ログイン成功！');
+            setTimeout(() => setCloudStatus(''), 2000);
+        } catch (error) {
+            console.error('Login error:', error);
+            setCloudStatus('ログイン失敗: ' + error.message, true);
+        }
+    };
+
+    window.logoutFromGoogle = async () => {
+        try {
+            await signOut(auth);
+            updateCloudUI(null);
+            setCloudStatus('ログアウトしました');
+            setTimeout(() => setCloudStatus(''), 2000);
+        } catch (error) {
+            console.error('Logout error:', error);
+            setCloudStatus('ログアウト失敗: ' + error.message, true);
+        }
+    };
+
+    window.uploadToCloud = async () => {
+        if (!currentUser) {
+            setCloudStatus('ログインしてください', true);
+            return;
+        }
+
+        try {
+            setCloudStatus('アップロード中...');
+
+            // Get all localStorage data
+            const dataStr = localStorage.getItem(DB_KEY);
+            if (!dataStr) {
+                setCloudStatus('保存データがありません', true);
+                return;
+            }
+
+            // Split into chunks
+            const chunks = [];
+            for (let i = 0; i < dataStr.length; i += CHUNK_SIZE) {
+                chunks.push(dataStr.slice(i, i + CHUNK_SIZE));
+            }
+
+            console.log(`Uploading ${chunks.length} chunks...`);
+
+            // Delete old chunks first
+            const chunksRef = collection(db, `users/${currentUser.uid}/apps/${APP_UNIQUE_KEY}/chunks`);
+            const oldChunks = await getDocs(chunksRef);
+            const deletePromises = oldChunks.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+
+            // Upload chunks in parallel
+            const uploadPromises = chunks.map((chunk, index) => {
+                const chunkDoc = doc(db, `users/${currentUser.uid}/apps/${APP_UNIQUE_KEY}/chunks/${index}`);
+                return setDoc(chunkDoc, {
+                    data: chunk,
+                    index: index,
+                    totalChunks: chunks.length,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            await Promise.all(uploadPromises);
+
+            setCloudStatus(`✓ アップロード完了 (${chunks.length}チャンク)`);
+            setTimeout(() => setCloudStatus(''), 3000);
+        } catch (error) {
+            console.error('Upload error:', error);
+            setCloudStatus('アップロード失敗: ' + error.message, true);
+        }
+    };
+
+    window.downloadFromCloud = async () => {
+        if (!currentUser) {
+            setCloudStatus('ログインしてください', true);
+            return;
+        }
+
+        try {
+            setCloudStatus('ダウンロード中...');
+
+            // Get all chunks
+            const chunksRef = collection(db, `users/${currentUser.uid}/apps/${APP_UNIQUE_KEY}/chunks`);
+            const q = query(chunksRef, orderBy('index'));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                setCloudStatus('クラウドにデータがありません', true);
+                return;
+            }
+
+            // Reconstruct data
+            const chunks = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                chunks[data.index] = data.data;
+            });
+
+            const dataStr = chunks.join('');
+            console.log(`Downloaded ${chunks.length} chunks, total size: ${dataStr.length} bytes`);
+
+            // Restore to localStorage
+            localStorage.setItem(DB_KEY, dataStr);
+
+            setCloudStatus('✓ 復元完了！リロード中...');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } catch (error) {
+            console.error('Download error:', error);
+            setCloudStatus('ダウンロード失敗: ' + error.message, true);
+        }
+    };
+
+    // Listen for auth state changes
+    if (auth) {
+        onAuthStateChanged(auth, (user) => {
+            updateCloudUI(user);
+        });
+    }
 
     // --- Init ---
     function init() {
