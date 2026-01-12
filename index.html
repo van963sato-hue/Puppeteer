@@ -606,7 +606,7 @@ const firebaseConfig = {
     let currentUser = null;
 
     // --- Cloud Sync Functions ---
-    function toggleCloudPanel() {
+    window.toggleCloudPanel = () => {
         document.getElementById('cloud-sync-panel').classList.toggle('minimized');
         const btn = document.querySelector('.minimize-btn');
         btn.textContent = document.getElementById('cloud-sync-panel').classList.contains('minimized') ? '☁️' : '−';
@@ -822,13 +822,13 @@ const firebaseConfig = {
     }
 
     // --- UI Logic ---
-    function closeAllPanels() {
+    window.closeAllPanels = () => {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('menu-panel').classList.remove('open');
         document.getElementById('overlay').classList.remove('open');
     }
 
-    function toggleSidebar() {
+    window.toggleSidebar = () => {
         const sidebar = document.getElementById('sidebar');
         const menu = document.getElementById('menu-panel');
         const overlay = document.getElementById('overlay');
@@ -843,7 +843,7 @@ const firebaseConfig = {
         }
     }
 
-    function toggleMenu() {
+    window.toggleMenu = () => {
         const sidebar = document.getElementById('sidebar');
         const menu = document.getElementById('menu-panel');
         const overlay = document.getElementById('overlay');
@@ -858,7 +858,7 @@ const firebaseConfig = {
         }
     }
 
-    function togglePromptPanel() {
+    window.togglePromptPanel = () => {
         document.getElementById('prompt-panel').classList.toggle('open');
     }
 
@@ -869,7 +869,7 @@ const firebaseConfig = {
         if(t==='save') { document.getElementById('view-save').classList.add('active'); }
     }
 
-    function setTabFromMenu(t) {
+    window.setTabFromMenu = (t) => {
         // Update menu items
         document.querySelectorAll('#menu-panel .menu-item').forEach((item, idx) => {
             if (idx < 3) item.classList.remove('active');
@@ -883,7 +883,7 @@ const firebaseConfig = {
         setTab(t);
 
         // Close menu
-        toggleMenu();
+        window.toggleMenu();
     }
 
     window.updateGenerationMode = () => {
@@ -951,7 +951,7 @@ const firebaseConfig = {
             div.addEventListener('click', () => {
                 editingCharId = c.id;
                 renderAll();
-                if(window.innerWidth <= 768) toggleSidebar();
+                if(window.innerWidth <= 768) window.toggleSidebar();
             });
 
             div.appendChild(label);
